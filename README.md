@@ -2,7 +2,7 @@
 
 Small inventory manager: categories and products, one category per product.
 
-> Status: scaffolding in progress — the setup steps below describe the target layout.
+> Status: in progress — the setup steps below describe the target layout.
 
 ## Stack
 
