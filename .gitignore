@@ -1,3 +1,21 @@
 /.idea
-/designs
-fakestore-inventory-spec.md
+/spec
+
+# dependencies
+node_modules/
+
+# env
+.env
+.env.*
+!.env.example
+
+# build output
+dist/
+build/
+
+# logs
+*.log
+npm-debug.log*
+
+# macOS
+.DS_Store

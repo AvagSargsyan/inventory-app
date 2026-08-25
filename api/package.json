@@ -1,0 +1,20 @@
+{
+  "name": "fakestore-api",
+  "version": "1.0.0",
+  "description": "FakeStore inventory API — Express 5 + PostgreSQL, raw parameterised SQL",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch --import dotenv/config src/server.js",
+    "start": "node --import dotenv/config src/server.js",
+    "seed": "node db/seed.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.2",
+    "pg": "^8.23.0"
+  }
+}
