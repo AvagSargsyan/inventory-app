@@ -6,8 +6,10 @@ export class HttpError extends Error {
   }
 }
 
-const UNIQUE_VIOLATION = '23505';
-const FOREIGN_KEY_VIOLATION = '23503';
+export const UNIQUE_VIOLATION = '23505';
+export const FOREIGN_KEY_VIOLATION = '23503';
+// ON DELETE RESTRICT raises 23001, not 23503 (which NO ACTION would raise).
+export const RESTRICT_VIOLATION = '23001';
 
 const CONFLICT_MESSAGES = {
   categories_name_key: 'A category with that name already exists.',
@@ -31,7 +33,7 @@ export function errorHandler(error, _req, res, _next) {
     return res.status(400).json({ error: 'Malformed JSON body' });
   }
 
-  if (error.code === UNIQUE_VIOLATION || error.code === FOREIGN_KEY_VIOLATION) {
+  if ([UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION, RESTRICT_VIOLATION].includes(error.code)) {
     return res.status(409).json({
       error: CONFLICT_MESSAGES[error.constraint] ?? 'Request conflicts with existing data.',
     });
