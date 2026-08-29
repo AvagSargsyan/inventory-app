@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { pool } from '../db/pool.js';
-import { HttpError, RESTRICT_VIOLATION } from '../middleware/errorHandler.js';
+import { HttpError, RESTRICT_VIOLATION, UNIQUE_VIOLATION } from '../middleware/errorHandler.js';
 import { requireIdParam, validate } from '../middleware/validate.js';
 
 export const categoriesRouter = Router();
@@ -82,9 +82,79 @@ categoriesRouter.put('/:id', requireIdParam, categoryBody, validate, async (req,
   res.json(rows[0]);
 });
 
-categoriesRouter.delete('/:id', requireIdParam, async (req, res) => {
+// Moves every product into another category and deletes the original, as one
+// unit. Runs on a single checked-out client: pool.query would hand each
+// statement a different connection, leaving BEGIN and COMMIT on separate
+// sessions.
+async function reassignAndDelete(sourceId, targetId) {
+  const client = await pool.connect();
   try {
-    const { rowCount } = await pool.query('DELETE FROM categories WHERE id = $1', [req.params.id]);
+    await client.query('BEGIN');
+
+    // FOR UPDATE conflicts with the FOR KEY SHARE lock an INSERT into products
+    // takes, so no product can join this category mid-transaction.
+    const source = await client.query('SELECT 1 FROM categories WHERE id = $1 FOR UPDATE', [sourceId]);
+    if (source.rowCount === 0) throw new HttpError(404, 'Category not found');
+
+    const target = await client.query('SELECT 1 FROM categories WHERE id = $1', [targetId]);
+    if (target.rowCount === 0) {
+      throw new HttpError(422, 'Validation failed', { reassign_to: 'Category does not exist.' });
+    }
+
+    await client.query(
+      'UPDATE products SET category_id = $1, updated_at = now() WHERE category_id = $2',
+      [targetId, sourceId],
+    );
+    await client.query('DELETE FROM categories WHERE id = $1', [sourceId]);
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function describeNameCollisions(sourceId, targetId) {
+  const { rows } = await pool.query(
+    `SELECT s.name
+       FROM products s
+      WHERE s.category_id = $1
+        AND EXISTS (SELECT 1 FROM products t WHERE t.category_id = $2 AND t.name = s.name)
+      ORDER BY s.name`,
+    [sourceId, targetId],
+  );
+  return rows.map((row) => row.name);
+}
+
+categoriesRouter.delete('/:id', requireIdParam, async (req, res) => {
+  const sourceId = Number(req.params.id);
+
+  if (req.query.reassign_to !== undefined) {
+    const targetId = Number(req.query.reassign_to);
+    if (!Number.isInteger(targetId) || targetId < 1) {
+      throw new HttpError(400, 'Invalid reassign_to');
+    }
+    if (targetId === sourceId) {
+      throw new HttpError(400, 'reassign_to must be a different category');
+    }
+
+    try {
+      await reassignAndDelete(sourceId, targetId);
+    } catch (error) {
+      if (error.code !== UNIQUE_VIOLATION) throw error;
+      const names = await describeNameCollisions(sourceId, targetId);
+      throw new HttpError(
+        409,
+        `Cannot reassign: the target category already has ${names.map((n) => `"${n}"`).join(', ')}.`,
+      );
+    }
+    return res.status(204).end();
+  }
+
+  try {
+    const { rowCount } = await pool.query('DELETE FROM categories WHERE id = $1', [sourceId]);
     if (rowCount === 0) throw new HttpError(404, 'Category not found');
     res.status(204).end();
   } catch (error) {
@@ -94,7 +164,7 @@ categoriesRouter.delete('/:id', requireIdParam, async (req, res) => {
     // the client can offer to reassign them.
     const { rows } = await pool.query(
       'SELECT COUNT(*)::int AS product_count FROM products WHERE category_id = $1',
-      [req.params.id],
+      [sourceId],
     );
     const count = rows[0].product_count;
     res.status(409).json({
