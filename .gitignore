@@ -19,3 +19,6 @@ npm-debug.log*
 
 # macOS
 .DS_Store
+
+# uploaded files
+api/uploads/

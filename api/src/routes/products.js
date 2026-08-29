@@ -3,7 +3,9 @@ import { body } from 'express-validator';
 import { pool } from '../db/pool.js';
 import { FOREIGN_KEY_VIOLATION, HttpError } from '../middleware/errorHandler.js';
 import { requireIdParam, validate } from '../middleware/validate.js';
+import { uploadImage, verifyImage } from '../middleware/upload.js';
 import { toCents } from '../lib/money.js';
+import * as storage from '../lib/storage.js';
 
 export const productsRouter = Router();
 
@@ -45,12 +47,8 @@ const productBody = [
       return true;
     }),
   body('stock_quantity')
-    .optional({ values: 'null' })
+    .optional({ values: 'falsy' })
     .isInt({ min: 0, max: 99_999 }).withMessage('Stock quantity must be a whole number between 0 and 99,999.'),
-  body('image_url')
-    .optional({ values: 'null' })
-    .trim()
-    .isLength({ max: 500 }).withMessage('Image URL must be 500 characters or fewer.'),
 ];
 
 // On insert or update a foreign key violation means the category does not
@@ -108,7 +106,9 @@ productsRouter.get('/:id', requireIdParam, async (req, res) => {
   res.json(rows[0]);
 });
 
-productsRouter.post('/', productBody, validate, async (req, res) => {
+productsRouter.post('/', uploadImage, verifyImage, productBody, validate, async (req, res) => {
+  const imageUrl = req.file ? await storage.save(req.file.buffer, req.file.extension) : null;
+
   try {
     const { rows } = await pool.query(
       `INSERT INTO products (category_id, name, price_cents, stock_quantity, image_url)
@@ -119,7 +119,7 @@ productsRouter.post('/', productBody, validate, async (req, res) => {
         req.body.name,
         toCents(req.body.price),
         req.body.stock_quantity ?? 0,
-        req.body.image_url || null,
+        imageUrl,
       ],
     );
     const created = await pool.query(
@@ -130,11 +130,25 @@ productsRouter.post('/', productBody, validate, async (req, res) => {
     );
     res.status(201).json(created.rows[0]);
   } catch (error) {
+    if (imageUrl) await storage.remove(imageUrl);
     throw asMissingCategory(error);
   }
 });
 
-productsRouter.put('/:id', requireIdParam, productBody, validate, async (req, res) => {
+productsRouter.put('/:id', requireIdParam, uploadImage, verifyImage, productBody, validate, async (req, res) => {
+  const current = await pool.query('SELECT image_url FROM products WHERE id = $1', [req.params.id]);
+  if (current.rowCount === 0) throw new HttpError(404, 'Product not found');
+  const previousImageUrl = current.rows[0].image_url;
+
+  let imageUrl = previousImageUrl;
+  let savedImageUrl = null;
+  if (req.file) {
+    savedImageUrl = await storage.save(req.file.buffer, req.file.extension);
+    imageUrl = savedImageUrl;
+  } else if (req.body.remove_image === 'true') {
+    imageUrl = null;
+  }
+
   try {
     const { rowCount } = await pool.query(
       `UPDATE products
@@ -146,26 +160,38 @@ productsRouter.put('/:id', requireIdParam, productBody, validate, async (req, re
         req.body.name,
         toCents(req.body.price),
         req.body.stock_quantity ?? 0,
-        req.body.image_url || null,
+        imageUrl,
         req.params.id,
       ],
     );
     if (rowCount === 0) throw new HttpError(404, 'Product not found');
-
-    const { rows } = await pool.query(
-      `SELECT ${PRODUCT_COLUMNS}
-         FROM products p JOIN categories c ON c.id = p.category_id
-        WHERE p.id = $1`,
-      [req.params.id],
-    );
-    res.json(rows[0]);
   } catch (error) {
+    if (savedImageUrl) await storage.remove(savedImageUrl);
     throw asMissingCategory(error);
   }
+
+  // Only once the row is committed, so a failed update never destroys the
+  // image the product still points at.
+  if (previousImageUrl && previousImageUrl !== imageUrl) {
+    await storage.remove(previousImageUrl);
+  }
+
+  const { rows } = await pool.query(
+    `SELECT ${PRODUCT_COLUMNS}
+       FROM products p JOIN categories c ON c.id = p.category_id
+      WHERE p.id = $1`,
+    [req.params.id],
+  );
+  res.json(rows[0]);
 });
 
 productsRouter.delete('/:id', requireIdParam, async (req, res) => {
-  const { rowCount } = await pool.query('DELETE FROM products WHERE id = $1', [req.params.id]);
-  if (rowCount === 0) throw new HttpError(404, 'Product not found');
+  const { rows } = await pool.query(
+    'DELETE FROM products WHERE id = $1 RETURNING image_url',
+    [req.params.id],
+  );
+  if (rows.length === 0) throw new HttpError(404, 'Product not found');
+
+  await storage.remove(rows[0].image_url);
   res.status(204).end();
 });
