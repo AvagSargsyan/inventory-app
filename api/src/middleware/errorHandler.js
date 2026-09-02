@@ -1,15 +1,5 @@
-export class HttpError extends Error {
-  constructor(status, message, fields) {
-    super(message);
-    this.status = status;
-    this.fields = fields;
-  }
-}
-
-export const UNIQUE_VIOLATION = '23505';
-export const FOREIGN_KEY_VIOLATION = '23503';
-// ON DELETE RESTRICT raises 23001, not 23503 (which NO ACTION would raise).
-export const RESTRICT_VIOLATION = '23001';
+import { HttpError } from '../lib/errors.js';
+import { FOREIGN_KEY_VIOLATION, RESTRICT_VIOLATION, UNIQUE_VIOLATION } from '../db/errors.js';
 
 const MULTER_MESSAGES = {
   LIMIT_FILE_SIZE: 'Image is too large.',
@@ -32,6 +22,7 @@ export function errorHandler(error, _req, res, _next) {
     return res.status(error.status).json({
       error: error.message,
       ...(error.fields && { fields: error.fields }),
+      ...error.details,
     });
   }
 
@@ -44,6 +35,7 @@ export function errorHandler(error, _req, res, _next) {
     return res.status(400).json({ error: 'Malformed JSON body' });
   }
 
+  // A constraint the services did not anticipate: still a conflict, never a 500.
   if ([UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION, RESTRICT_VIOLATION].includes(error.code)) {
     return res.status(409).json({
       error: CONFLICT_MESSAGES[error.constraint] ?? 'Request conflicts with existing data.',

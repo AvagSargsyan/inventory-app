@@ -1,5 +1,5 @@
 import multer from 'multer';
-import { HttpError } from './errorHandler.js';
+import { validationFailed } from '../lib/errors.js';
 
 const MAX_BYTES = Number(process.env.MAX_UPLOAD_BYTES) || 2 * 1024 * 1024;
 
@@ -27,9 +27,7 @@ export function verifyImage(req, _res, next) {
 
   const signature = SIGNATURES.find(({ matches }) => matches(req.file.buffer));
   if (!signature) {
-    return next(new HttpError(422, 'Validation failed', {
-      image: 'Image must be a JPEG, PNG or WebP file.',
-    }));
+    return next(validationFailed({ image: 'Image must be a JPEG, PNG or WebP file.' }));
   }
 
   req.file.extension = signature.extension;

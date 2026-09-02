@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { categoriesRouter } from './routes/categories.js';
-import { productsRouter } from './routes/products.js';
+import { apiRouter } from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { PUBLIC_PREFIX, UPLOAD_DIR } from './lib/storage.js';
 
@@ -18,8 +17,7 @@ app.use(PUBLIC_PREFIX, express.static(UPLOAD_DIR, {
   setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
 }));
 
-app.use('/api/categories', categoriesRouter);
-app.use('/api/products', productsRouter);
+app.use('/api', apiRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

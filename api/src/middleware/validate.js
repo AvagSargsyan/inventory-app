@@ -1,5 +1,5 @@
 import { validationResult } from 'express-validator';
-import { HttpError } from './errorHandler.js';
+import { badRequest, validationFailed } from '../lib/errors.js';
 
 export function validate(req, _res, next) {
   const result = validationResult(req);
@@ -9,13 +9,13 @@ export function validate(req, _res, next) {
   for (const error of result.array()) {
     fields[error.path] ??= error.msg;
   }
-  next(new HttpError(422, 'Validation failed', fields));
+  next(validationFailed(fields));
 }
 
 export function requireIdParam(req, _res, next) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) {
-    return next(new HttpError(400, 'Invalid id'));
+    return next(badRequest('Invalid id'));
   }
   next();
 }
