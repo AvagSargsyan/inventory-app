@@ -1,5 +1,5 @@
-import multer from 'multer';
-import { validationFailed } from '../lib/errors.js';
+import multer from "multer";
+import { validationFailed } from "../lib/errors.js";
 
 const MAX_BYTES = Number(process.env.MAX_UPLOAD_BYTES) || 2 * 1024 * 1024;
 
@@ -8,15 +8,19 @@ const MAX_BYTES = Number(process.env.MAX_UPLOAD_BYTES) || 2 * 1024 * 1024;
 export const uploadImage = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_BYTES, files: 1 },
-}).single('image');
+}).single("image");
 
 const SIGNATURES = [
-  { extension: 'jpg', matches: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
-  { extension: 'png', matches: (b) => b.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) },
+  { extension: "jpg", matches: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
   {
-    extension: 'webp',
-    matches: (b) => b.subarray(0, 4).toString('ascii') === 'RIFF'
-      && b.subarray(8, 12).toString('ascii') === 'WEBP',
+    extension: "png",
+    matches: (b) => b.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex")),
+  },
+  {
+    extension: "webp",
+    matches: (b) =>
+      b.subarray(0, 4).toString("ascii") === "RIFF" &&
+      b.subarray(8, 12).toString("ascii") === "WEBP",
   },
 ];
 
@@ -27,7 +31,7 @@ export function verifyImage(req, _res, next) {
 
   const signature = SIGNATURES.find(({ matches }) => matches(req.file.buffer));
   if (!signature) {
-    return next(validationFailed({ image: 'Image must be a JPEG, PNG or WebP file.' }));
+    return next(validationFailed({ image: "Image must be a JPEG, PNG or WebP file." }));
   }
 
   req.file.extension = signature.extension;

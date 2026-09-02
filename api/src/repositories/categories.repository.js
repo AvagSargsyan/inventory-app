@@ -1,6 +1,6 @@
-import { pool } from '../db/pool.js';
+import { pool } from "../db/pool.js";
 
-const COLUMNS = 'id, name, description, created_at, updated_at';
+const COLUMNS = "id, name, description, created_at, updated_at";
 
 const SELECT_WITH_COUNT = `
   SELECT c.id, c.name, c.description, c.created_at, c.updated_at,
@@ -19,14 +19,14 @@ export async function findById(id) {
 }
 
 export async function exists(id, db = pool) {
-  const { rowCount } = await db.query('SELECT 1 FROM categories WHERE id = $1', [id]);
+  const { rowCount } = await db.query("SELECT 1 FROM categories WHERE id = $1", [id]);
   return rowCount > 0;
 }
 
 // FOR UPDATE conflicts with the FOR KEY SHARE lock an INSERT into products
 // takes, so no product can join this category mid-transaction.
 export async function existsForUpdate(id, db) {
-  const { rowCount } = await db.query('SELECT 1 FROM categories WHERE id = $1 FOR UPDATE', [id]);
+  const { rowCount } = await db.query("SELECT 1 FROM categories WHERE id = $1 FOR UPDATE", [id]);
   return rowCount > 0;
 }
 
@@ -52,6 +52,6 @@ export async function update(id, { name, description }) {
 }
 
 export async function remove(id, db = pool) {
-  const { rowCount } = await db.query('DELETE FROM categories WHERE id = $1', [id]);
+  const { rowCount } = await db.query("DELETE FROM categories WHERE id = $1", [id]);
   return rowCount > 0;
 }

@@ -1,5 +1,5 @@
-import { validationResult } from 'express-validator';
-import { badRequest, validationFailed } from '../lib/errors.js';
+import { validationResult } from "express-validator";
+import { badRequest, validationFailed } from "../lib/errors.js";
 
 export function validate(req, _res, next) {
   const result = validationResult(req);
@@ -15,7 +15,7 @@ export function validate(req, _res, next) {
 export function requireIdParam(req, _res, next) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) {
-    return next(badRequest('Invalid id'));
+    return next(badRequest("Invalid id"));
   }
   next();
 }

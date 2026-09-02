@@ -40,19 +40,19 @@ See [`api/db/schema.sql`](./api/db/schema.sql) for the full definition.
 
 ## API
 
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/api/categories` | includes `product_count`, computed in SQL |
-| GET | `/api/categories/:id` | |
-| GET | `/api/categories/:id/products` | |
-| POST | `/api/categories` | 201 |
-| PUT | `/api/categories/:id` | |
-| DELETE | `/api/categories/:id` | 204, or 409 if it has products |
-| GET | `/api/products` | `?category=&q=&sort=` |
-| GET | `/api/products/:id` | |
-| POST | `/api/products` | 201 |
-| PUT | `/api/products/:id` | |
-| DELETE | `/api/products/:id` | 204 |
+| Method | Path                           | Notes                                     |
+| ------ | ------------------------------ | ----------------------------------------- |
+| GET    | `/api/categories`              | includes `product_count`, computed in SQL |
+| GET    | `/api/categories/:id`          |                                           |
+| GET    | `/api/categories/:id/products` |                                           |
+| POST   | `/api/categories`              | 201                                       |
+| PUT    | `/api/categories/:id`          |                                           |
+| DELETE | `/api/categories/:id`          | 204, or 409 if it has products            |
+| GET    | `/api/products`                | `?category=&q=&sort=`                     |
+| GET    | `/api/products/:id`            |                                           |
+| POST   | `/api/products`                | 201                                       |
+| PUT    | `/api/products/:id`            |                                           |
+| DELETE | `/api/products/:id`            | 204                                       |
 
 Errors are uniform: `{ "error": "Validation failed", "fields": { "name": "Name is required" } }`.
 400 malformed · 404 missing · 409 conflict · 422 validation · 500 otherwise.

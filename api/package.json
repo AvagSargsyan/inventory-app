@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "node --watch --import dotenv/config src/server.js",
     "start": "node --import dotenv/config src/server.js",
-    "seed": "node db/seed.js"
+    "seed": "node db/seed.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "license": "MIT",
   "dependencies": {
@@ -17,5 +19,8 @@
     "express-validator": "^7.3.2",
     "multer": "^2.3.0",
     "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6"
   }
 }
