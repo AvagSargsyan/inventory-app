@@ -18,7 +18,8 @@ const toRow = (input, imageUrl) => ({
   categoryId: input.category_id,
   name: input.name,
   priceCents: toCents(input.price),
-  stockQuantity: input.stock_quantity ?? 0,
+  // A blank multipart field arrives as '', which is falsy but not nullish.
+  stockQuantity: input.stock_quantity || 0,
   imageUrl,
 });
 
