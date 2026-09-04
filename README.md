@@ -177,9 +177,3 @@ stored on local disk** under `api/uploads/` and served from `/uploads`.
 are ephemeral, so uploads would vanish on redeploy. All disk access sits behind
 [`api/src/lib/storage.js`](./api/src/lib/storage.js) — swapping in S3, R2 or Cloudinary means
 reimplementing that one module and nothing else.
-
-## Formatting
-
-Prettier lives inside `api/` so the API stays self-contained; `web/` will get its own. Editor
-configs at the repo root (`.vscode/`, `.idea/prettier.xml`) point at `api/node_modules/prettier` for
-format-on-save.
