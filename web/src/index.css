@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Required even though there is no dark palette: without it Tailwind leaves
+   the dark: prefix unregistered and emits it as a literal class name, so
+   every dark: utility in the generated components applies in light mode.
+   Declared, they compile to `.dark &` and stay inert. */
+@custom-variant dark (&:is(.dark *));
+
+/* Design tokens (spec §6). The palette is the source of truth; the shadcn
+   semantic names below map onto it, so components never carry raw hex.
+
+   Light only — the reference design has no dark mode, so shadcn's generated
+   .dark block, chart-* and sidebar-* tokens were removed rather than left
+   inverting to greys that belong to no palette.
+
+   Breakpoints are Tailwind's md/lg/xl (48rem, 64rem, 80rem) and no others. */
+
+:root {
+  --indigo: #4f46e5;
+  --indigo-soft: #eef2ff;
+  --red: #dc2626;
+  --page: #f8fafc;
+  --surface: #ffffff;
+  --hairline: #e2e8f0;
+  --ink: #0f172a;
+  --ink-muted: #64748b;
+  --grey-soft: #f1f5f9;
+  --footer: #1e293b;
+
+  /* 8px, not shadcn's 0.625rem. */
+  --radius: 0.5rem;
+
+  --background: var(--page);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--indigo);
+  --primary-foreground: #ffffff;
+  /* The stock pill: light indigo on indigo. */
+  --secondary: var(--indigo-soft);
+  --secondary-foreground: var(--indigo);
+  /* Hover and highlight backgrounds inside Select, Sheet and dialogs. */
+  --accent: var(--grey-soft);
+  --accent-foreground: var(--ink);
+  --muted: var(--grey-soft);
+  --muted-foreground: var(--ink-muted);
+  --destructive: var(--red);
+  --destructive-foreground: #ffffff;
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--indigo);
+}
+
+@theme inline {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Geometric sans for headings and the logo, mono for form labels — that
+     sans/mono contrast is the reference design's one signature move. */
+  --font-heading: "Manrope", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-footer: var(--footer);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    margin: 0;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* A long unbroken string in user data must not widen the page. */
+  body,
+  h1,
+  h2,
+  h3,
+  p {
+    overflow-wrap: break-word;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-heading font-bold;
+  }
+
+  img {
+    max-width: 100%;
+    display: block;
+  }
+
+  :focus-visible {
+    @apply outline-ring;
+    outline-width: 2px;
+    outline-offset: 2px;
+  }
+}
+
+/* Covers the animations Radix adds to Sheet and AlertDialog. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
