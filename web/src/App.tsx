@@ -4,6 +4,7 @@ import Home from "@/pages/Home";
 import Categories from "@/pages/Categories";
 import CategoryDetail from "@/pages/CategoryDetail";
 import Products from "@/pages/Products";
+import CategoryForm from "@/pages/CategoryForm";
 import NotFound from "@/pages/NotFound";
 
 // Routes are added as their pages are built; anything not listed yet falls
@@ -15,6 +16,8 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/categories" element={<Categories />} />
+          <Route path="/categories/new" element={<CategoryForm />} />
+          <Route path="/categories/:id/edit" element={<CategoryForm />} />
           <Route path="/categories/:id" element={<CategoryDetail />} />
           <Route path="/products" element={<Products />} />
           <Route path="*" element={<NotFound />} />
