@@ -1,6 +1,6 @@
 // Integer arithmetic, mirroring the API's toCents: dividing by 100 would put a
 // binary float between the stored cents and what the user reads.
-export function formatPrice(cents) {
+export function formatPrice(cents: number): string {
   const sign = cents < 0 ? "-" : "";
   const absolute = Math.abs(cents);
   const whole = Math.floor(absolute / 100).toLocaleString("en-US");

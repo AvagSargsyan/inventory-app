@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
-import { listCategories } from "@/api";
+import { errorMessage, listCategories } from "@/api";
+import type { Category } from "@/api";
 import { useApi } from "@/hooks/useApi";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ export default function Categories() {
         <Alert variant="destructive">
           <AlertCircle />
           <AlertTitle>Could not load categories</AlertTitle>
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{errorMessage(state.error)}</AlertDescription>
         </Alert>
       )}
 
@@ -54,7 +55,7 @@ export default function Categories() {
   );
 }
 
-function CategoryCard({ category }) {
+function CategoryCard({ category }: { category: Category }) {
   const { id, name, description, product_count } = category;
   return (
     <Card className="flex-1 px-5">

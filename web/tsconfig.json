@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    // Vite's esbuild strips types without checking them, exactly like Node's
+    // stripper, so nothing but `npm run typecheck` will ever catch an error.
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    // Vite owns the build; tsc only ever checks.
+    "noEmit": true,
+    "skipLibCheck": true,
+
+    // baseUrl was removed in TypeScript 7; paths now resolve relative to this file.
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src"]
+}

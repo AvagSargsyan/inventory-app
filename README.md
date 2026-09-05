@@ -3,7 +3,7 @@
 Small inventory manager: categories and products, one category per product. Built as a learning
 project — Postgres with raw parameterised SQL, no ORM.
 
-> **Status** — the API is complete and written in TypeScript: all endpoints, the
+> **Status** — both packages are TypeScript. The API is complete: all endpoints, the
 > reassign-and-delete transaction, and image upload. The React frontend (`web/`) is under way —
 > the app shell, `/categories` and `/categories/:id` are built; forms and the delete flow are not.
 
@@ -11,8 +11,8 @@ project — Postgres with raw parameterised SQL, no ORM.
 
 - **api** — Node 22 (ESM), **TypeScript**, Express 5, PostgreSQL 18, `pg` with raw parameterised
   SQL, `express-validator`, `multer`, `cors`, `dotenv`. No ORM.
-- **web** — Vite + React 19, React Router v7, Tailwind v4 with shadcn/ui, plain `fetch`.
-  _(still JavaScript; the TypeScript conversion is pending)_
+- **web** — Vite + React 19, **TypeScript**, React Router v7, Tailwind v4 with shadcn/ui,
+  plain `fetch`.
 
 ## Structure
 

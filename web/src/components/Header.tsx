@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
+import type { NavLinkRenderProps } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Container } from "@/components/Container";
 
-const NAV = [
+type NavItem = { to: string; label: string };
+
+const NAV: readonly NavItem[] = [
   { to: "/", label: "Home" },
   { to: "/categories", label: "Categories" },
   { to: "/products", label: "Products" },
@@ -14,7 +17,7 @@ const NAV = [
 
 // Weight as well as colour, so the active link is not signalled by hue alone.
 // NavLink sets aria-current="page" itself.
-const navLink = ({ isActive }) =>
+const navLink = ({ isActive }: NavLinkRenderProps): string =>
   cn(
     "flex min-h-11 items-center rounded-lg px-2 hover:text-primary",
     isActive ? "font-bold text-primary" : "text-foreground",

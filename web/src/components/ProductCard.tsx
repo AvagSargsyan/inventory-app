@@ -1,14 +1,21 @@
 import { Link } from "react-router-dom";
 import { imageUrl } from "@/api";
+import type { Product, ProductWithCategory } from "@/api";
 import { formatPrice } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-// `category_name` is absent from /api/categories/:id/products, where the
-// category is already the page you are on.
-export function ProductCard({ product }) {
-  const { id, name, category_name, price_cents, stock_quantity, image_url } = product;
+// Accepts either shape: category_name is absent from
+// /api/categories/:id/products, where the category is already the page.
+type ProductCardProduct = Product | ProductWithCategory;
+
+const categoryNameOf = (product: ProductCardProduct): string | undefined =>
+  "category_name" in product ? product.category_name : undefined;
+
+export function ProductCard({ product }: { product: ProductCardProduct }) {
+  const { id, name, price_cents, stock_quantity, image_url } = product;
+  const categoryName = categoryNameOf(product);
   const src = imageUrl(image_url);
 
   return (
@@ -24,7 +31,7 @@ export function ProductCard({ product }) {
       </div>
 
       <h2 className="text-xl font-semibold">{name}</h2>
-      {category_name && <p className="text-[0.9375rem] text-muted-foreground">{category_name}</p>}
+      {categoryName && <p className="text-[0.9375rem] text-muted-foreground">{categoryName}</p>}
 
       <div className="flex items-center justify-between gap-3">
         <span className="text-xl font-bold">{formatPrice(price_cents)}</span>

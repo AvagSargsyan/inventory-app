@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
-import { getCategory, listCategoryProducts } from "@/api";
+import { errorMessage, getCategory, isApiError, listCategoryProducts } from "@/api";
 import { useApi } from "@/hooks/useApi";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +15,10 @@ import { ProductCard } from "@/components/ProductCard";
 // showing the previous category's products under the new heading.
 export default function CategoryDetail() {
   const { id } = useParams();
-  return <CategoryDetailView key={id} id={id} />;
+  return <CategoryDetailView key={id} id={id ?? ""} />;
 }
 
-function CategoryDetailView({ id }) {
+function CategoryDetailView({ id }: { id: string }) {
   // One request pair, so there is one loading state and one error state. A
   // missing category rejects here rather than rendering an empty shell.
   const state = useApi(() => Promise.all([getCategory(id), listCategoryProducts(id)]));
@@ -26,14 +26,14 @@ function CategoryDetailView({ id }) {
   if (state.status === "loading") return <LoadingView />;
 
   if (state.status === "error") {
-    const missing = state.error.status === 404;
+    const missing = isApiError(state.error) && state.error.status === 404;
     return (
       <Container className="py-6 md:py-8">
         <Alert variant="destructive">
           <AlertCircle />
           <AlertTitle>{missing ? "Category not found" : "Could not load this category"}</AlertTitle>
           <AlertDescription>
-            {missing ? "It may have been deleted." : state.error.message}
+            {missing ? "It may have been deleted." : errorMessage(state.error)}
           </AlertDescription>
         </Alert>
         <Button asChild variant="outline" className="mt-6">
