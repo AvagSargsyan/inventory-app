@@ -32,6 +32,9 @@ export default function Products() {
   const category = searchParams.get("category") ?? "";
   const q = searchParams.get("q") ?? "";
 
+  // Bumped after a delete so the results remount and refetch.
+  const [version, setVersion] = useState(0);
+
   // Categories feed the filter and do not change with it, so they load once at
   // this level rather than with every result set.
   const categoriesState = useApi(listCategories);
@@ -83,10 +86,11 @@ export default function Products() {
       {/* Remounting on the filters resets the request to loading, rather than
           leaving the previous results on screen under the new query. */}
       <Results
-        key={`${category}|${q}`}
+        key={`${category}|${q}|${version}`}
         category={category}
         q={q}
         filtered={Boolean(category || q)}
+        onChanged={() => setVersion((current) => current + 1)}
       />
     </Container>
   );
@@ -169,7 +173,17 @@ function Filters({ category, q, categories, onSearch, onCategoryChange }: Filter
   );
 }
 
-function Results({ category, q, filtered }: { category: string; q: string; filtered: boolean }) {
+function Results({
+  category,
+  q,
+  filtered,
+  onChanged,
+}: {
+  category: string;
+  q: string;
+  filtered: boolean;
+  onChanged: () => void;
+}) {
   const state = useApi(() => listProducts({ category, q }));
 
   if (state.status === "loading") return <LoadingGrid />;
@@ -205,7 +219,7 @@ function Results({ category, q, filtered }: { category: string; q: string; filte
     <CardGrid as="ul">
       {state.data.map((product) => (
         <CardGridItem key={product.id}>
-          <ProductCard product={product} />
+          <ProductCard product={product} onDeleted={onChanged} />
         </CardGridItem>
       ))}
     </CardGrid>

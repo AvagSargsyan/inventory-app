@@ -1,4 +1,5 @@
-import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { errorMessage, getCategory, isApiError, listCategoryProducts } from "@/api";
 import { useApi } from "@/hooks/useApi";
@@ -9,16 +10,26 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardGrid, CardGridItem } from "@/components/CardGrid";
 import { Container } from "@/components/Container";
+import { DeleteCategoryDialog } from "@/components/DeleteCategoryDialog";
 import { ProductCard } from "@/components/ProductCard";
 
 // Keyed on the id so moving between two categories remounts rather than
 // showing the previous category's products under the new heading.
 export default function CategoryDetail() {
   const { id } = useParams();
-  return <CategoryDetailView key={id} id={id ?? ""} />;
+  // Bumped after a product is deleted, so the list and the count refetch.
+  const [version, setVersion] = useState(0);
+  return (
+    <CategoryDetailView
+      key={`${id}|${version}`}
+      id={id ?? ""}
+      onChanged={() => setVersion((current) => current + 1)}
+    />
+  );
 }
 
-function CategoryDetailView({ id }: { id: string }) {
+function CategoryDetailView({ id, onChanged }: { id: string; onChanged: () => void }) {
+  const navigate = useNavigate();
   // One request pair, so there is one loading state and one error state. A
   // missing category rejects here rather than rendering an empty shell.
   const state = useApi(() => Promise.all([getCategory(id), listCategoryProducts(id)]));
@@ -63,9 +74,17 @@ function CategoryDetailView({ id }: { id: string }) {
               {category.product_count} {category.product_count === 1 ? "product" : "products"}
             </Badge>
           </div>
-          <Button asChild variant="outline">
-            <Link to={`/categories/${category.id}/edit`}>Edit category</Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to={`/categories/${category.id}/edit`}>Edit category</Link>
+            </Button>
+            {/* Deleting the category one is looking at leaves nowhere to
+                return to, so it navigates rather than refetching. */}
+            <DeleteCategoryDialog
+              category={{ id: category.id, name: category.name }}
+              onDeleted={() => navigate("/categories")}
+            />
+          </div>
         </div>
       </div>
 
@@ -80,7 +99,7 @@ function CategoryDetailView({ id }: { id: string }) {
         <CardGrid as="ul">
           {products.map((product) => (
             <CardGridItem key={product.id}>
-              <ProductCard product={product} />
+              <ProductCard product={product} onDeleted={onChanged} />
             </CardGridItem>
           ))}
         </CardGrid>
