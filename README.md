@@ -3,9 +3,11 @@
 Small inventory manager: categories and products, one category per product. Built as a learning
 project — Postgres with raw parameterised SQL, no ORM.
 
-> **Status** — both packages are TypeScript. The API is complete: all endpoints, the
-> reassign-and-delete transaction, and image upload. The React frontend (`web/`) is under way —
-> the app shell, `/categories` and `/categories/:id` are built; forms and the delete flow are not.
+**Live — <https://web-gules-gamma-93.vercel.app>**
+
+> **Status** — feature complete and deployed: all eleven endpoints, all nine routes, the
+> reassign-and-delete transaction and image upload, both packages in TypeScript. Playwright
+> end-to-end tests are the remaining work.
 
 ## Stack
 
@@ -73,7 +75,16 @@ npm run dev                  # http://localhost:3000
 
 Verify with `curl localhost:3000/api/categories` — four categories with product counts.
 
-### Scripts
+Then the frontend, in a second terminal:
+
+```bash
+cd web
+npm install
+cp .env.example .env         # VITE_API_URL=http://localhost:3000
+npm run dev                  # http://localhost:5173
+```
+
+### Scripts — `api/`
 
 | Command                | Does                                                        |
 | ---------------------- | ----------------------------------------------------------- |
@@ -95,6 +106,12 @@ PORT=3000
 CORS_ORIGIN=http://localhost:5173
 UPLOAD_DIR=./uploads
 MAX_UPLOAD_BYTES=2097152
+```
+
+`web/.env` — same rules; `web/.env.example` is committed.
+
+```
+VITE_API_URL=http://localhost:3000
 ```
 
 ## Schema
@@ -198,7 +215,49 @@ stored on local disk** under `api/uploads/` and served from `/uploads`.
 - A failed insert deletes the file it just wrote; a replaced image is deleted only **after** the new
   row commits, so a failed write never destroys an image the product still points at.
 
-**Local disk is a deliberate learning-project choice.** Container filesystems on Railway/Render/Fly
-are ephemeral, so uploads would vanish on redeploy. All disk access sits behind
-[`api/src/lib/storage.ts`](./api/src/lib/storage.ts) — swapping in S3, R2 or Cloudinary means
-reimplementing that one module and nothing else.
+**Local disk, which in production means uploads do not survive.** Render's free tier has no
+persistent disk, so an uploaded image lives until the service next sleeps or redeploys. The seed
+carries no images, so the deployed app shows the placeholder block. Making uploads durable means
+object storage — S3, R2 or Cloudinary — and every disk call sits behind
+[`api/src/lib/storage.ts`](./api/src/lib/storage.ts), so that swap reimplements one module and
+nothing else.
+
+## Deployment
+
+Three free services, one per concern:
+
+| Piece    | Where  | Behaviour                                           |
+| -------- | ------ | --------------------------------------------------- |
+| SPA      | Vercel | static files on a CDN, always awake                 |
+| API      | Render | free web service, sleeps after 15 minutes idle      |
+| Database | Neon   | serverless Postgres, suspends its compute when idle |
+
+All three are in AWS `us-west-2`, because every API request is a round trip to the database and a
+cross-region pairing adds latency to each one.
+
+The SPA is deployed separately rather than served from Express. That keeps the two packages
+independent, and it hides the cold start: Vercel serves the app immediately, so the list pages'
+loading states cover the minute Render takes to wake instead of the browser showing a blank tab.
+
+Render builds with `npm install --include=dev && npm run build` and starts with `npm start`.
+The `--include=dev` is not optional — Render sets `NODE_ENV=production`, npm then skips
+`devDependencies`, and `typescript` lives there, so the build fails without it.
+
+Configuration differs in kind between the two platforms, which decides what a change requires:
+
+- **Render** reads `DATABASE_URL`, `CORS_ORIGIN` and `MAX_UPLOAD_BYTES` at **runtime**, so
+  changing one needs a restart. `PORT` is injected by the platform and must not be set. Note that
+  `CORS_ORIGIN` must be an exact origin with no trailing slash — `cors` string-compares it against
+  the browser's `Origin` header, and leaving it unset emits no CORS headers at all rather than a
+  wildcard.
+- **Vercel** reads `VITE_API_URL` at **build time**, because Vite compiles the value into the
+  bundle. Changing it needs a rebuild; a restart would keep serving the old string.
+
+Two details the platforms make necessary:
+
+- `web/vercel.json` rewrites unknown paths to `index.html`. The routes are client-side, so
+  without it a refresh on `/categories/1` reaches the CDN as a request for a file that does not
+  exist.
+- `pool.on("error")` in [`api/src/db/pool.ts`](./api/src/db/pool.ts) exists because a serverless
+  Postgres suspends its compute when idle, killing pooled connections with no request in flight.
+  Unhandled, that event ends the Node process rather than failing a request.
