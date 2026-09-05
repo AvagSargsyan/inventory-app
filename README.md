@@ -3,14 +3,16 @@
 Small inventory manager: categories and products, one category per product. Built as a learning
 project — Postgres with raw parameterised SQL, no ORM.
 
-> **Status** — the API is complete: all endpoints, the reassign-and-delete transaction, and image
-> upload. The React frontend (`web/`) has not been started yet.
+> **Status** — the API is complete and written in TypeScript: all endpoints, the
+> reassign-and-delete transaction, and image upload. The React frontend (`web/`) is under way —
+> the app shell, `/categories` and `/categories/:id` are built; forms and the delete flow are not.
 
 ## Stack
 
-- **api** — Node 22 (ESM), Express 5, PostgreSQL 18, `pg` with raw parameterised SQL,
-  `express-validator`, `multer`, `cors`, `dotenv`. No ORM.
-- **web** — Vite + React 18, React Router v6, plain `fetch`. _(not yet built)_
+- **api** — Node 22 (ESM), **TypeScript**, Express 5, PostgreSQL 18, `pg` with raw parameterised
+  SQL, `express-validator`, `multer`, `cors`, `dotenv`. No ORM.
+- **web** — Vite + React 19, React Router v7, Tailwind v4 with shadcn/ui, plain `fetch`.
+  _(still JavaScript; the TypeScript conversion is pending)_
 
 ## Structure
 
@@ -18,12 +20,13 @@ Layered architecture: each layer depends only on the one below it.
 
 ```
 api/
+├── tsconfig.json             strict, plus the two options below
 ├── db/
 │   ├── schema.sql            tables, constraints, indexes
-│   └── seed.js               runs schema.sql, then inserts sample data
+│   └── seed.ts               runs schema.sql, then inserts sample data
 └── src/
-    ├── server.js             binds the port
-    ├── app.js                middleware order, mounting
+    ├── server.ts             binds the port
+    ├── app.ts                middleware order, mounting
     ├── routes/               paths + middleware chains
     ├── controllers/          HTTP in → service → HTTP out
     ├── services/             business rules, transactions, image lifecycle
@@ -34,9 +37,29 @@ api/
     └── db/                   pool, Postgres error codes, withTransaction
 ```
 
+### TypeScript
+
+Node 22.18 strips types natively, so **development needs no build step** — `npm run dev` runs
+`src/server.ts` directly. Two consequences drive the setup:
+
+- **Stripping never type-checks.** Node deletes the annotations and runs what is left, so a
+  program full of type errors starts happily. `npm run typecheck` is the only thing that will
+  ever tell you, which is why it is a separate script rather than folded into `dev`.
+- **Stripping only handles erasable syntax.** `enum`, `namespace` and parameter properties throw
+  `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` at runtime, so `erasableSyntaxOnly` makes `tsc` reject
+  exactly that set at compile time instead. Use unions of string literals in place of `enum`.
+
+Imports carry `.ts` extensions so Node can resolve them when running the source;
+`rewriteRelativeImportExtensions` turns them into `.js` on the way into `dist/`. Production runs
+the built output — deploying stripped source would ship code nothing has checked.
+
+Row types live beside the SQL that produces them. `pool.query<CategoryRow>(…)` is an _assertion_,
+not a check: change the `SELECT` list and the type quietly becomes a lie. That is the cost of
+raw SQL, and the reason the type sits in the same file as the query.
+
 ## Setup
 
-Requires Node 22+ and a running PostgreSQL 16+.
+Requires Node 22.18+ (for native type stripping) and a running PostgreSQL 16+.
 
 ```bash
 createdb fakestore
@@ -54,8 +77,10 @@ Verify with `curl localhost:3000/api/categories` — four categories with produc
 
 | Command                | Does                                                        |
 | ---------------------- | ----------------------------------------------------------- |
-| `npm run dev`          | start with `--watch`, reloading on change                   |
-| `npm start`            | start without watching (what a deploy platform runs)        |
+| `npm run dev`          | run `src/server.ts` with `--watch`, no build step           |
+| `npm run typecheck`    | `tsc --noEmit` — the only thing that checks types           |
+| `npm run build`        | `tsc` → `dist/`                                             |
+| `npm start`            | run the built output (what a deploy platform runs)          |
 | `npm run seed`         | reset the database to a known state                         |
 | `npm run format`       | Prettier over `api/`                                        |
 | `npm run format:check` | verify formatting, non-zero exit if anything is unformatted |
@@ -175,5 +200,5 @@ stored on local disk** under `api/uploads/` and served from `/uploads`.
 
 **Local disk is a deliberate learning-project choice.** Container filesystems on Railway/Render/Fly
 are ephemeral, so uploads would vanish on redeploy. All disk access sits behind
-[`api/src/lib/storage.js`](./api/src/lib/storage.js) — swapping in S3, R2 or Cloudinary means
+[`api/src/lib/storage.ts`](./api/src/lib/storage.ts) — swapping in S3, R2 or Cloudinary means
 reimplementing that one module and nothing else.

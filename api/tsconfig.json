@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    // Node strips types but never checks them, and refuses anything it cannot
+    // erase; this rejects that same syntax at compile time instead.
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+
+    // Imports carry .ts so `node src/server.ts` resolves them; tsc rewrites
+    // them to .js on the way into dist/.
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+
+    "rootDir": ".",
+    "outDir": "dist",
+    "sourceMap": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "db/**/*.ts"]
+}

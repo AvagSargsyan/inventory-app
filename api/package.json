@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "FakeStore inventory API — Express 5 + PostgreSQL, raw parameterised SQL",
   "type": "module",
-  "main": "src/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
-    "dev": "node --watch --import dotenv/config src/server.js",
-    "start": "node --import dotenv/config src/server.js",
-    "seed": "node db/seed.js",
+    "dev": "node --watch --import dotenv/config src/server.ts",
+    "start": "node --import dotenv/config dist/src/server.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "seed": "node db/seed.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -21,6 +23,12 @@
     "pg": "^8.23.0"
   },
   "devDependencies": {
-    "prettier": "^3.9.6"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.4.1",
+    "@types/pg": "^8.23.1",
+    "prettier": "^3.9.6",
+    "typescript": "^7.0.2"
   }
 }

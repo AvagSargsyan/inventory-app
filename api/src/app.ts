@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
-import { apiRouter } from "./routes/index.js";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
-import { PUBLIC_PREFIX, UPLOAD_DIR } from "./lib/storage.js";
+import { apiRouter } from "./routes/index.ts";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.ts";
+import { PUBLIC_PREFIX, UPLOAD_DIR } from "./lib/storage.ts";
 
 export const app = express();
 

@@ -1,6 +1,7 @@
 import { body } from "express-validator";
+import type { ValidationChain } from "express-validator";
 
-export const productBody = [
+export const productBody: ValidationChain[] = [
   body("name")
     .trim()
     .notEmpty()
@@ -18,7 +19,7 @@ export const productBody = [
     .notEmpty()
     .withMessage("Price is required.")
     .bail()
-    .custom((value) => {
+    .custom((value: unknown) => {
       if (!/^\d+(\.\d{1,2})?$/.test(String(value).trim())) {
         throw new Error("Price must be a non-negative number with at most 2 decimal places.");
       }

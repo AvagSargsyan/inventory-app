@@ -8,14 +8,22 @@ import pg from "pg";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const CATEGORIES = [
+type SeedCategory = { name: string; description: string };
+type SeedProduct = {
+  category: string;
+  name: string;
+  price_cents: number;
+  stock_quantity: number;
+};
+
+const CATEGORIES: SeedCategory[] = [
   { name: "Electronics", description: "Phones, audio, wearables, and everyday gadgets." },
   { name: "Computers", description: "Laptops, monitors, peripherals, and storage." },
   { name: "Office", description: "Desks, chairs, lighting, and workspace essentials." },
   { name: "Home and Kitchen", description: "Small appliances and tools for the home." },
 ];
 
-const PRODUCTS = [
+const PRODUCTS: SeedProduct[] = [
   { category: "Electronics", name: "Wireless Earbuds", price_cents: 7999, stock_quantity: 42 },
   { category: "Electronics", name: "Bluetooth Speaker", price_cents: 4599, stock_quantity: 18 },
   { category: "Electronics", name: "Smart Watch", price_cents: 19999, stock_quantity: 7 },
@@ -40,7 +48,7 @@ const PRODUCTS = [
   { category: "Office", name: "Notebook Set", price_cents: 799, stock_quantity: 95 },
 ];
 
-async function seed() {
+async function seed(): Promise<void> {
   if (!process.env.DATABASE_URL) {
     console.error("DATABASE_URL is not set. Copy api/.env.example to api/.env first.");
     process.exit(1);
@@ -55,15 +63,17 @@ async function seed() {
     const schema = await readFile(join(here, "schema.sql"), "utf8");
     await client.query(schema);
 
-    const categoryIdByName = new Map();
+    const categoryIdByName = new Map<string, number>();
     for (const category of CATEGORIES) {
-      const { rows } = await client.query(
+      const { rows } = await client.query<{ id: number; name: string }>(
         `INSERT INTO categories (name, description)
          VALUES ($1, $2)
          RETURNING id, name`,
         [category.name, category.description],
       );
-      categoryIdByName.set(rows[0].name, rows[0].id);
+      // INSERT ... RETURNING always yields exactly one row.
+      const inserted = rows[0]!;
+      categoryIdByName.set(inserted.name, inserted.id);
     }
 
     for (const product of PRODUCTS) {
@@ -81,7 +91,7 @@ async function seed() {
 
     await client.query("COMMIT");
 
-    const { rows } = await client.query(
+    const { rows } = await client.query<{ name: string; product_count: number }>(
       `SELECT c.name, COUNT(p.id)::int AS product_count
          FROM categories c
          LEFT JOIN products p ON p.category_id = c.id
@@ -100,7 +110,7 @@ async function seed() {
   }
 }
 
-seed().catch((error) => {
-  console.error("Seed failed:", error.message);
+seed().catch((error: unknown) => {
+  console.error("Seed failed:", error instanceof Error ? error.message : error);
   process.exit(1);
 });

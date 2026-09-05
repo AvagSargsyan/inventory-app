@@ -1,31 +1,39 @@
-import * as categories from "../repositories/categories.repository.js";
-import * as products from "../repositories/products.repository.js";
-import { withTransaction } from "../db/transaction.js";
-import { isRestrictViolation, isUniqueViolation } from "../db/errors.js";
-import { badRequest, conflict, notFound, validationFailed } from "../lib/errors.js";
+import * as categories from "../repositories/categories.repository.ts";
+import * as products from "../repositories/products.repository.ts";
+import type { CategoryRow, CategoryWithCountRow } from "../repositories/categories.repository.ts";
+import { withTransaction } from "../db/transaction.ts";
+import { isRestrictViolation, isUniqueViolation } from "../db/errors.ts";
+import { badRequest, conflict, notFound, validationFailed } from "../lib/errors.ts";
 
-export const list = () => categories.findAll();
+// What the validated request body carries. The repository's CategoryRowInput
+// happens to match it, so unlike products there is no conversion step.
+export type CategoryInput = {
+  name: string;
+  description: string | null;
+};
 
-export const create = (data) => categories.insert(data);
+export const list = (): Promise<CategoryWithCountRow[]> => categories.findAll();
 
-export async function get(id) {
+export const create = (data: CategoryInput): Promise<CategoryRow> => categories.insert(data);
+
+export async function get(id: string): Promise<CategoryWithCountRow> {
   const category = await categories.findById(id);
   if (!category) throw notFound("Category not found");
   return category;
 }
 
-export async function listProducts(id) {
+export async function listProducts(id: string) {
   if (!(await categories.exists(id))) throw notFound("Category not found");
   return products.findByCategory(id);
 }
 
-export async function update(id, data) {
+export async function update(id: string, data: CategoryInput): Promise<CategoryRow> {
   const updated = await categories.update(id, data);
   if (!updated) throw notFound("Category not found");
   return updated;
 }
 
-export async function remove(id) {
+export async function remove(id: string): Promise<void> {
   try {
     if (!(await categories.remove(id))) throw notFound("Category not found");
   } catch (error) {
@@ -42,7 +50,7 @@ export async function remove(id) {
 
 // Moves every product into another category and deletes the original, as one
 // unit: either the products moved and the category is gone, or nothing changed.
-export async function reassignAndDelete(sourceId, targetId) {
+export async function reassignAndDelete(sourceId: number, targetId: number): Promise<void> {
   if (!Number.isInteger(targetId) || targetId < 1) {
     throw badRequest("Invalid reassign_to");
   }

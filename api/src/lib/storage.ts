@@ -12,7 +12,7 @@ export const PUBLIC_PREFIX = "/uploads";
 
 await mkdir(UPLOAD_DIR, { recursive: true });
 
-export async function save(buffer, extension) {
+export async function save(buffer: Buffer, extension: string): Promise<string> {
   const filename = `${randomUUID()}.${extension}`;
   await writeFile(join(UPLOAD_DIR, filename), buffer);
   return `${PUBLIC_PREFIX}/${filename}`;
@@ -20,21 +20,27 @@ export async function save(buffer, extension) {
 
 // Best effort: a stranded file wastes a few kilobytes, a failed request loses
 // the user's work.
-export async function remove(publicPath) {
+export async function remove(publicPath: string | null): Promise<void> {
   const filename = toFilename(publicPath);
   if (!filename) return;
 
   try {
     await unlink(join(UPLOAD_DIR, filename));
   } catch (error) {
-    if (error.code !== "ENOENT") {
-      console.error(`Could not remove upload ${filename}:`, error.message);
+    if (!isMissingFile(error)) {
+      console.error(`Could not remove upload ${filename}:`, toMessage(error));
     }
   }
 }
 
+const isMissingFile = (error: unknown): boolean =>
+  error instanceof Error && "code" in error && error.code === "ENOENT";
+
+const toMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 // Guards against a tampered row pointing outside the upload directory.
-function toFilename(publicPath) {
+function toFilename(publicPath: string | null): string | null {
   if (typeof publicPath !== "string" || !publicPath.startsWith(`${PUBLIC_PREFIX}/`)) return null;
   const filename = publicPath.slice(PUBLIC_PREFIX.length + 1);
   return /^[\w.-]+$/.test(filename) && !filename.includes("..") ? filename : null;

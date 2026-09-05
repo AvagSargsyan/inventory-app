@@ -1,9 +1,10 @@
-import { pool } from "./pool.js";
+import type { PoolClient } from "pg";
+import { pool } from "./pool.ts";
 
 // Runs fn against one checked-out client so BEGIN and COMMIT share a session —
 // pool.query would spread them across different connections. Repository
 // functions take that client as their `db` argument to join the transaction.
-export async function withTransaction(fn) {
+export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");

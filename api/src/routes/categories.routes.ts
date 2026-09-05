@@ -1,7 +1,7 @@
 import { Router } from "express";
-import * as controller from "../controllers/categories.controller.js";
-import { requireIdParam, validate } from "../middleware/validate.js";
-import { categoryBody } from "../validators/categories.validators.js";
+import * as controller from "../controllers/categories.controller.ts";
+import { requireIdParam, validate } from "../middleware/validate.ts";
+import { categoryBody } from "../validators/categories.validators.ts";
 
 export const categoriesRouter = Router();
 

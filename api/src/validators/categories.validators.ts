@@ -1,6 +1,7 @@
 import { body } from "express-validator";
+import type { ValidationChain } from "express-validator";
 
-export const categoryBody = [
+export const categoryBody: ValidationChain[] = [
   body("name")
     .trim()
     .notEmpty()
