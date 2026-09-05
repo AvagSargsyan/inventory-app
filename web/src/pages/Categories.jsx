@@ -1,33 +1,17 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { listCategories } from "@/api";
+import { useApi } from "@/hooks/useApi";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CardGrid, CardGridItem } from "@/components/CardGrid";
 import { Container } from "@/components/Container";
 
-// auto-fill reflows 1 -> 2 -> 3 columns with no media query. The min() keeps
-// the track from overflowing a container narrower than 16rem.
-const GRID = "grid gap-5 grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))]";
-
 export default function Categories() {
-  const [state, setState] = useState({ status: "loading" });
-
-  useEffect(() => {
-    // StrictMode runs effects twice in development, and a slow response can
-    // arrive after unmount either way.
-    let ignore = false;
-    listCategories().then(
-      (categories) => !ignore && setState({ status: "ready", categories }),
-      (error) => !ignore && setState({ status: "error", error }),
-    );
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const state = useApi(listCategories);
 
   return (
     <Container className="py-6 md:py-8">
@@ -48,7 +32,7 @@ export default function Categories() {
         </Alert>
       )}
 
-      {state.status === "ready" && state.categories.length === 0 && (
+      {state.status === "ready" && state.data.length === 0 && (
         <Card className="items-center gap-4 py-10 text-center">
           <p className="text-muted-foreground">No categories yet.</p>
           <Button asChild>
@@ -57,14 +41,14 @@ export default function Categories() {
         </Card>
       )}
 
-      {state.status === "ready" && state.categories.length > 0 && (
-        <ul className={GRID}>
-          {state.categories.map((category) => (
-            <li key={category.id} className="contents">
+      {state.status === "ready" && state.data.length > 0 && (
+        <CardGrid as="ul">
+          {state.data.map((category) => (
+            <CardGridItem key={category.id}>
               <CategoryCard category={category} />
-            </li>
+            </CardGridItem>
           ))}
-        </ul>
+        </CardGrid>
       )}
     </Container>
   );
@@ -73,7 +57,7 @@ export default function Categories() {
 function CategoryCard({ category }) {
   const { id, name, description, product_count } = category;
   return (
-    <Card className="px-5">
+    <Card className="flex-1 px-5">
       <h2 className="text-xl font-semibold">
         <Link to={`/categories/${id}`} className="hover:text-primary">
           {name}
@@ -92,7 +76,7 @@ function CategoryCard({ category }) {
 
 function LoadingGrid() {
   return (
-    <div className={GRID} aria-busy="true" aria-label="Loading categories">
+    <CardGrid aria-busy="true" aria-label="Loading categories">
       {Array.from({ length: 4 }, (_, i) => (
         <Card key={i} className="px-5">
           <Skeleton className="h-6 w-2/3" />
@@ -101,6 +85,6 @@ function LoadingGrid() {
           <Skeleton className="mt-auto h-11 w-full" />
         </Card>
       ))}
-    </div>
+    </CardGrid>
   );
 }
