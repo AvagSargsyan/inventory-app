@@ -14,6 +14,9 @@
     "format:check": "prettier --check ."
   },
   "license": "MIT",
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
