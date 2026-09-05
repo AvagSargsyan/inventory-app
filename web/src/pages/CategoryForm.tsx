@@ -7,12 +7,11 @@ import { useApi } from "@/hooks/useApi";
 import { toSubmitFailure } from "@/lib/formErrors";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Container } from "@/components/Container";
 import { FormField } from "@/components/FormField";
+import { FormShell } from "@/components/FormShell";
 
 type Values = { name: string; description: string };
 
@@ -142,17 +141,6 @@ function CategoryFormView({ id, initial }: { id?: string; initial: Values }) {
         </div>
       </form>
     </FormShell>
-  );
-}
-
-function FormShell({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Container className="py-6 md:py-8">
-      <Card className="px-5 md:mx-auto md:max-w-[45rem] md:px-6">
-        <h2 className="mb-2 text-xl font-semibold">{title}</h2>
-        {children}
-      </Card>
-    </Container>
   );
 }
 
