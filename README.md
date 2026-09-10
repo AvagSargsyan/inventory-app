@@ -5,9 +5,11 @@ project — Postgres with raw parameterised SQL, no ORM.
 
 **Live — <https://web-gules-gamma-93.vercel.app>**
 
-> **Status** — feature complete and deployed: all eleven endpoints, all nine routes, the
-> reassign-and-delete transaction and image upload, both packages in TypeScript. Playwright
-> end-to-end tests are the remaining work.
+> **Status — in progress.** A learning project under active development. Neither the app nor this
+> README is final, and more complex features are planned.
+>
+> **Working now** — all eleven endpoints, all nine routes, the reassign-and-delete transaction,
+> image upload, both packages in TypeScript, deployed and publicly reachable.
 
 ## Stack
 
