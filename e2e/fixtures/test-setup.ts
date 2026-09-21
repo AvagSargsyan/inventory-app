@@ -10,11 +10,16 @@ export type Category = {
   product_count: number;
 };
 
+export type Product = { id: number; name: string };
+
 type Fixtures = {
   // Arranging a test's starting data through the API, rather than by filling
   // in another page's forms first, keeps a broken form failing only the test
   // that is about that form.
-  api: { createCategory: (name: string) => Promise<Category> };
+  api: {
+    createCategory: (name: string) => Promise<Category>;
+    createProduct: (input: { categoryId: number; name: string }) => Promise<Product>;
+  };
   // Names nothing else uses, so specs can run at the same time and assert on
   // their own rows instead of on totals.
   unique: (prefix: string) => string;
@@ -40,23 +45,40 @@ async function discard(path: string): Promise<void> {
 
 export const test = base.extend<Fixtures>({
   api: async ({}, use) => {
-    const createdIds: number[] = [];
+    const categoryIds: number[] = [];
+    const productIds: number[] = [];
 
     await use({
+      async createProduct({ categoryId, name }) {
+        // POST /api/products takes multipart rather than JSON, because of the
+        // optional image field.
+        const form = new FormData();
+        form.set("category_id", String(categoryId));
+        form.set("name", name);
+        form.set("price", "9.99");
+        form.set("stock_quantity", "1");
+
+        const product = await request<Product>("/api/products", { method: "POST", body: form });
+        productIds.push(product.id);
+        return product;
+      },
+
       async createCategory(name) {
         const category = await request<Category>("/api/categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, description: "Created by an E2E test" }),
         });
-        createdIds.push(category.id);
+        categoryIds.push(category.id);
         return category;
       },
     });
 
     // This runs even when the test fails. The end of a test body does not, so
     // a failure would otherwise leave rows behind.
-    for (const id of createdIds.reverse()) {
+    for (const id of productIds.reverse()) await discard(`/api/products/${id}`);
+
+    for (const id of categoryIds.reverse()) {
       // A category holding products answers 409, and the test may well have
       // added some through the UI, which nothing here recorded.
       const products = await request<{ id: number }[]>(`/api/categories/${id}/products`).catch(
