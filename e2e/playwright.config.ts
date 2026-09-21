@@ -52,6 +52,9 @@ export default defineConfig({
     // is what makes a failure that only happens in CI debuggable at all.
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    // Headless runs finish faster than the eye can follow, so test:e2e:watch
+    // sets SLOW_MO to pause between actions. Normal runs leave it at 0.
+    launchOptions: { slowMo: Number(process.env.SLOW_MO) || 0 },
   },
 
   // Chromium alone: the five viewport widths in the design spec are worth more
@@ -61,7 +64,10 @@ export default defineConfig({
   webServer: hermetic
     ? [
         {
-          command: "npm run dev",
+          // Seed first, in the same command: Playwright starts web servers
+          // before globalSetup runs, so seeding there would be too late and
+          // the readiness check below would query tables that do not exist.
+          command: "npm run seed && npm run dev",
           cwd: "../api",
           // Port 3100, not the 3000 a development server sits on. Reusing that
           // one would run the whole suite against the development database.
@@ -71,7 +77,8 @@ export default defineConfig({
             PORT: "3100",
             DATABASE_URL: TEST_DATABASE_URL,
             CORS_ORIGIN: BASE_URL,
-            // Its own directory, so the image tests can empty one they own.
+            // Its own directory, so an E2E run's uploads land somewhere
+            // it is safe to empty.
             UPLOAD_DIR: "./uploads-test",
           },
         },
