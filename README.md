@@ -5,6 +5,8 @@ project — Postgres with raw parameterised SQL, no ORM.
 
 **Live — <https://web-gules-gamma-93.vercel.app>**
 
+![The categories page: a card grid with product counts and per-card actions](docs/screenshot.png)
+
 > **Status — in progress.** A learning project under active development. Neither the app nor this
 > README is final, and more complex features are planned.
 >
@@ -287,6 +289,14 @@ starting its own:
 ```bash
 E2E_TARGET=deployed BASE_URL=https://… API_URL=https://… npm run test:e2e
 ```
+
+The screenshot at the top of this file is captured by the suite, in its own Playwright project
+that runs after the rest and is skipped when anything failed — so it cannot drift from the app,
+and cannot show a broken build.
+
+CI runs typecheck, lint, formatting and the full suite on every push and pull request, against a
+`postgres` service container, and uploads the Playwright report — traces included — whenever
+something fails. See [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
 
 ## Deployment
 

@@ -59,7 +59,22 @@ export default defineConfig({
 
   // Chromium alone: the five viewport widths in the design spec are worth more
   // here than a second engine.
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: /screenshot\.spec\.ts/,
+    },
+    {
+      // Last, and skipped entirely if anything above failed: the README should
+      // never show a picture of a broken build, and by this point every other
+      // spec has cleaned its rows up.
+      name: "screenshot",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /screenshot\.spec\.ts/,
+      dependencies: ["chromium"],
+    },
+  ],
 
   webServer: hermetic
     ? [

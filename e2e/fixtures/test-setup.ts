@@ -19,6 +19,9 @@ type Fixtures = {
   api: {
     createCategory: (name: string) => Promise<Category>;
     createProduct: (input: { categoryId: number; name: string }) => Promise<Product>;
+    // For a row the test made through the UI, which nothing here saw. Without
+    // it, a test that creates by clicking leaves the row behind.
+    trackCategoryNamed: (name: string) => void;
   };
   // Names nothing else uses, so specs can run at the same time and assert on
   // their own rows instead of on totals.
@@ -47,8 +50,13 @@ export const test = base.extend<Fixtures>({
   api: async ({}, use) => {
     const categoryIds: number[] = [];
     const productIds: number[] = [];
+    const trackedNames: string[] = [];
 
     await use({
+      trackCategoryNamed(name) {
+        trackedNames.push(name);
+      },
+
       async createProduct({ categoryId, name }) {
         // POST /api/products takes multipart rather than JSON, because of the
         // optional image field.
@@ -76,6 +84,16 @@ export const test = base.extend<Fixtures>({
 
     // This runs even when the test fails. The end of a test body does not, so
     // a failure would otherwise leave rows behind.
+    // Names resolve to ids first, so tracked rows go through the same delete
+    // path as ones created here.
+    if (trackedNames.length > 0) {
+      const all = await request<Category[]>("/api/categories").catch(() => []);
+      for (const name of trackedNames) {
+        const match = all.find((category) => category.name === name);
+        if (match) categoryIds.push(match.id);
+      }
+    }
+
     for (const id of productIds.reverse()) await discard(`/api/products/${id}`);
 
     for (const id of categoryIds.reverse()) {

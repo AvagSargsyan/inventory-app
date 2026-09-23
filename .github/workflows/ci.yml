@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fakestore_test
+        ports: ["5432:5432"]
+        # The job starts when the container starts, which is before Postgres is
+        # ready to accept connections.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            api/package-lock.json
+            web/package-lock.json
+            e2e/package-lock.json
+
+      - name: Install
+        run: |
+          (cd api && npm ci)
+          (cd web && npm ci)
+          (cd e2e && npm ci)
+
+      # Node, esbuild and Playwright all strip types without checking them, so
+      # this is the only step that would ever catch a type error.
+      - name: Typecheck
+        run: |
+          (cd api && npm run typecheck)
+          (cd web && npm run typecheck)
+          (cd e2e && npm run typecheck)
+
+      - name: Lint and format
+        run: |
+          (cd web && npm run lint)
+          (cd api && npm run format:check)
+          (cd web && npm run format:check)
+          (cd e2e && npm run format:check)
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      # Playwright starts the API and the built SPA itself and seeds the
+      # database named below before either of them answers.
+      - name: End-to-end tests
+        run: npm run test:e2e
+        working-directory: e2e
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fakestore_test
+
+      # The trace in this report is what makes a failure that only happens here
+      # debuggable locally.
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7

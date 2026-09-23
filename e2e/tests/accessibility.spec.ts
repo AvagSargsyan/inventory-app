@@ -33,8 +33,10 @@ test("form controls are large enough that iOS will not zoom on focus", async ({ 
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
 });
 
-test("a category can be created with the keyboard alone", async ({ page, unique }) => {
+test("a category can be created with the keyboard alone", async ({ page, api, unique }) => {
   const name = unique("Tabbed");
+  // Created by clicking, so the teardown has to be told about it.
+  api.trackCategoryNamed(name);
   const nameField = page.getByLabel("Category name");
 
   await page.goto("/categories/new");
