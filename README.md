@@ -9,7 +9,8 @@ project — Postgres with raw parameterised SQL, no ORM.
 > README is final, and more complex features are planned.
 >
 > **Working now** — all eleven endpoints, all nine routes, the reassign-and-delete transaction,
-> image upload, both packages in TypeScript, deployed and publicly reachable.
+> image upload, an end-to-end test suite, all three packages in TypeScript, deployed and
+> publicly reachable.
 
 ## Stack
 
@@ -17,10 +18,24 @@ project — Postgres with raw parameterised SQL, no ORM.
   SQL, `express-validator`, `multer`, `cors`, `dotenv`. No ORM.
 - **web** — Vite + React 19, **TypeScript**, React Router v7, Tailwind v4 with shadcn/ui,
   plain `fetch`.
+- **e2e** — Playwright, **TypeScript**. Drives the built SPA in a real browser.
 
 ## Structure
 
-Layered architecture: each layer depends only on the one below it.
+Three packages, each with its own `package.json` and `tsconfig.json` and depending on neither of
+the others:
+
+```
+fakestore/
+├── api/   Express + PostgreSQL
+├── web/   Vite + React + shadcn/ui
+└── e2e/   Playwright
+```
+
+`e2e/` is its own package because it is the only code that legitimately knows about both the API
+and the SPA, so it belongs to neither.
+
+`api/` is layered — each layer depends only on the one below it:
 
 ```
 api/
@@ -84,6 +99,18 @@ cd web
 npm install
 cp .env.example .env         # VITE_API_URL=http://localhost:3000
 npm run dev                  # http://localhost:5173
+```
+
+And the tests, which manage their own servers and database:
+
+```bash
+createdb fakestore_test
+
+cd e2e
+npm install
+npx playwright install chromium   # a one-off browser download, per machine
+cp .env.example .env              # set TEST_DATABASE_URL
+npm run test:e2e
 ```
 
 ### Scripts — `api/`
@@ -223,6 +250,43 @@ carries no images, so the deployed app shows the placeholder block. Making uploa
 object storage — S3, R2 or Cloudinary — and every disk call sits behind
 [`api/src/lib/storage.ts`](./api/src/lib/storage.ts), so that swap reimplements one module and
 nothing else.
+
+## Testing
+
+End-to-end only — Playwright driving the **built** SPA in a real browser. No unit tests and no
+API integration suite: one layer, one tool.
+
+```bash
+cd e2e
+npm run test:e2e         # headless; what CI runs
+npm run test:e2e:watch   # a visible browser, one test at a time, slowed down
+npm run test:e2e:ui      # step back and forth through every action
+```
+
+A run starts everything it needs and shuts it down afterwards: it reseeds `fakestore_test`,
+serves the API on port 3100 and the built SPA on 4173. Port 3100 rather than 3000 so a running
+development server can never be reused by accident — that one points at the development database,
+which the seed drops on its way in.
+
+Eighteen tests cover the two full journeys, a real image upload rendered back from `/uploads`,
+reassign-and-delete driven through the dialog, server validation landing under the right field,
+the empty and error states, no horizontal scroll at 320/375/768/1024/1440px on every route, the
+44px touch target and 16px input floors, and one form completed by keyboard alone.
+
+Two rules keep it repeatable:
+
+- **Each test creates the rows it asserts on**, under a name nothing else uses, and a fixture
+  teardown deletes them — which still runs when the test fails. Nothing depends on what the seed
+  happens to contain.
+- **Assertions are relative, never totals.** A test looks for its own row rather than counting
+  the cards on screen.
+
+Nothing in the specs names a host, so the same suite can drive a deployed environment instead of
+starting its own:
+
+```bash
+E2E_TARGET=deployed BASE_URL=https://… API_URL=https://… npm run test:e2e
+```
 
 ## Deployment
 
