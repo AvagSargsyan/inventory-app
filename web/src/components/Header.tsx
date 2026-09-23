@@ -35,12 +35,12 @@ export function Header() {
 
   return (
     <header className="border-b border-border bg-card">
-      <Container className="flex min-h-16 items-center justify-between gap-4">
+      <Container className="flex min-h-16 items-center justify-between gap-3 lg:gap-4">
         <Link to="/" className="font-heading text-2xl font-bold text-primary">
           FakeStore
         </Link>
 
-        <nav className="hidden md:flex md:items-center md:gap-5">
+        <nav className="hidden md:flex md:items-center md:gap-2 lg:gap-5">
           {NAV.map(({ to, label }) => (
             <NavLink key={to} to={to} end={to === "/"} className={navLink}>
               {label}
@@ -48,7 +48,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="hidden md:flex md:gap-3">
+        <div className="hidden md:flex md:gap-2 lg:gap-3">
           <Button asChild>
             <Link to="/products/new">Add Product</Link>
           </Button>
